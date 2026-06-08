@@ -39,6 +39,12 @@
 #include "Summary.h"
 #include "version.h"
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "cc/ControlCommand.h"
+#   include "cc/CCClient.h"
+#   include "cc/XMRigd.h"
+#endif
+
 
 xmrig::App::App(Process *process)
 {
@@ -59,6 +65,13 @@ int xmrig::App::exec()
 
         return 2;
     }
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    if (!m_controller->config()->isDaemonized()) {
+        LOG_EMERG(APP_ID " is compiled with CC support, please start the daemon instead.\n");
+        return 2;
+    }
+#   endif
 
     int rc = 0;
     if (background(rc)) {
@@ -86,10 +99,14 @@ int xmrig::App::exec()
 
     m_controller->start();
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    m_controller->ccClient()->addCommandListener(this);
+#   endif
+
     rc = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
     uv_loop_close(uv_default_loop());
 
-    return rc;
+    return m_rc > 0 ? m_rc : rc;
 }
 
 
@@ -120,12 +137,77 @@ void xmrig::App::onSignal(int signum)
 }
 
 
-void xmrig::App::close()
+#ifdef XMRIG_FEATURE_CC_CLIENT
+void xmrig::App::onCommandReceived(ControlCommand& command)
 {
+    switch (command.getCommand()) {
+        case ControlCommand::START:
+            m_controller->execCommand('r');
+            break;
+        case ControlCommand::STOP:
+            m_controller->execCommand('p');
+            break;
+        case ControlCommand::UPDATE:
+        case ControlCommand::RESTART:
+            close(RC_RESTART);
+            break;
+        case ControlCommand::SHUTDOWN:
+            close(RC_OK);
+            break;
+        case ControlCommand::REBOOT:
+            reboot();
+            break;
+        case ControlCommand::EXECUTE:
+            execute(command.getPayload());
+            break;
+        case ControlCommand::UPDATE_CONFIG:
+        case ControlCommand::PUBLISH_CONFIG:
+            break;
+    }
+}
+#endif
+
+
+void xmrig::App::close(int rc)
+{
+    m_rc = rc;
+
     m_signals.reset();
     m_console.reset();
 
     m_controller->stop();
 
     Log::destroy();
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    uv_stop(uv_default_loop());
+#   endif
 }
+
+
+#ifdef XMRIG_FEATURE_CC_CLIENT
+void xmrig::App::reboot()
+{
+#   ifdef XMRIG_FEATURE_CC_CLIENT_SHELL_EXECUTE
+    auto rebootCmd = m_controller->config()->ccClient().rebootCmd();
+    if (rebootCmd) {
+        system(rebootCmd);
+        close(RC_OK);
+    }
+#   else
+    LOG_EMERG("Shell execute disabled. Skipping REBOOT.");
+#   endif
+}
+
+
+void xmrig::App::execute(const std::string& command)
+{
+#   ifdef XMRIG_FEATURE_CC_CLIENT_SHELL_EXECUTE
+    // XMRigCC 原实现通过临时脚本 + popen 执行任意命令，安全风险高，本迁移默认不移植该逻辑。
+    // 如确需启用，请参考 xmrigCC/src/App.cpp 的 execute() 自行补全。
+    LOG_EMERG("Shell execute (full implementation) not ported. Skipping %s", command.c_str());
+#   else
+    LOG_EMERG("Shell execute disabled. Skipping %s", command.c_str());
+#   endif
+}
+#endif

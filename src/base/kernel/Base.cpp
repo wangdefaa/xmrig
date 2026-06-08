@@ -42,6 +42,12 @@
 #endif
 
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "base/io/log/backends/RemoteLog.h"
+#   include "cc/CCClient.h"
+#endif
+
+
 #ifdef XMRIG_FEATURE_API
 #   include "base/api/Api.h"
 #   include "base/api/interfaces/IApiRequest.h"
@@ -83,6 +89,10 @@ public:
         delete api;
 #       endif
 
+#       ifdef XMRIG_FEATURE_CC_CLIENT
+        delete ccClient;
+#       endif
+
         delete config;
         delete watcher;
 
@@ -112,6 +122,9 @@ public:
 
 
     Api *api            = nullptr;
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    CCClient *ccClient  = nullptr;
+#   endif
     Config *config      = nullptr;
     std::vector<IBaseListener *> listeners;
     Watcher *watcher    = nullptr;
@@ -187,6 +200,10 @@ int xmrig::Base::init()
     d_ptr->api->addListener(this);
 #   endif
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    d_ptr->ccClient = new CCClient(this);
+#   endif
+
     Platform::init(config()->userAgent());
 
     if (isBackground()) {
@@ -199,6 +216,13 @@ int xmrig::Base::init()
     if (config()->logFile()) {
         Log::add(new FileLog(config()->logFile()));
     }
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    if (config()->ccClient().useRemoteLogging()) {
+        // 20 lines per second should be enough
+        Log::add(new RemoteLog(static_cast<size_t>(config()->ccClient().updateInterval() * 20)));
+    }
+#   endif
 
 #   ifdef HAVE_SYSLOG_H
     if (config()->isSyslog()) {
@@ -216,6 +240,18 @@ void xmrig::Base::start()
     api()->start();
 #   endif
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    if (d_ptr->config->ccClient().enabled()) {
+        if (d_ptr->config->ccClient().host() && d_ptr->config->ccClient().port() > 0) {
+            ccClient()->start();
+        } else {
+            LOG_WARN("Please configure CC-Url and restart. CC feature is now deactivated.");
+        }
+    } else {
+        LOG_WARN("CC feature is disabled.");
+    }
+#   endif
+
     if (config()->isShouldSave()) {
         config()->save();
     }
@@ -228,6 +264,12 @@ void xmrig::Base::start()
 
 void xmrig::Base::stop()
 {
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    ccClient()->stop();
+    delete d_ptr->ccClient;
+    d_ptr->ccClient = nullptr;
+#   endif
+
 #   ifdef XMRIG_FEATURE_API
     api()->stop();
 #   endif
@@ -243,6 +285,16 @@ xmrig::Api *xmrig::Base::api() const
 
     return d_ptr->api;
 }
+
+
+#ifdef XMRIG_FEATURE_CC_CLIENT
+xmrig::CCClient *xmrig::Base::ccClient() const
+{
+    assert(d_ptr->ccClient != nullptr);
+
+    return d_ptr->ccClient;
+}
+#endif
 
 
 bool xmrig::Base::isBackground() const

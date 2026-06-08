@@ -45,7 +45,6 @@ public:
         BackgroundKey        = 'B',
         ColorKey             = 1002,
         ConfigKey            = 'c',
-        DonateLevelKey       = 1003,
         KeepAliveKey         = 'k',
         LogFileKey           = 'l',
         PasswordKey          = 'p',
@@ -61,7 +60,6 @@ public:
         VerboseKey           = 1100,
         TlsKey               = 1013,
         FingerprintKey       = 1014,
-        ProxyDonateKey       = 1017,
         DaemonKey            = 1018,
         DaemonPollKey        = 1019,
         SelfSelectKey        = 1028,
@@ -163,6 +161,21 @@ public:
         CudaLoaderKey        = 1208,
         NvmlKey              = 1209,
         HealthPrintTimeKey   = 1210,
+
+        // XMRigCC CC-Client params
+        CCDaemonizedKey         = 9000,
+        CCEnabledKey            = 9001,
+        CCUseTLS                = 9002,
+        CCUseRemoteLog          = 9003,
+        CCUploadConfigOnStartup = 9004,
+        CCRebootCmd             = 9005,
+        CCUrl                   = 9006,
+        CCAccessToken           = 9007,
+        CCWorkerId              = 9008,
+        CCUpdateInterval        = 9009,
+        CCRetriesToFailover     = 9010,
+        CCProxyServer           = 9011,
+        CCSocksProxyServer      = 9012,
     };
 
     virtual ~IConfig() = default;

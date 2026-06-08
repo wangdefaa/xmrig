@@ -29,6 +29,10 @@
 #include "base/tools/Object.h"
 #include "interfaces/IJobResultListener.h"
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "base/cc/interfaces/IClientStatusListener.h"
+#endif
+
 
 #include <vector>
 
@@ -42,6 +46,9 @@ class NetworkState;
 
 
 class Network : public IJobResultListener, public IStrategyListener, public IBaseListener, public ITimerListener, public IApiListener
+#ifdef XMRIG_FEATURE_CC_CLIENT
+              , public IClientStatusListener
+#endif
 {
 public:
     XMRIG_DISABLE_COPY_MOVE_DEFAULT(Network)
@@ -66,6 +73,10 @@ protected:
     void onResultAccepted(IStrategy *strategy, IClient *client, const SubmitResult &result, const char *error) override;
     void onVerifyAlgorithm(IStrategy *strategy, const  IClient *client, const Algorithm &algorithm, bool *ok) override;
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    void onUpdateRequest(ClientStatus& clientStatus) override;
+#   endif
+
 #   ifdef XMRIG_FEATURE_API
     void onRequest(IApiRequest &request) override;
 #   endif
@@ -73,7 +84,7 @@ protected:
 private:
     constexpr static int kTickInterval = 1 * 1000;
 
-    void setJob(IClient *client, const Job &job, bool donate);
+    void setJob(IClient *client, const Job &job);
     void tick();
 
 #   ifdef XMRIG_FEATURE_API
@@ -82,7 +93,6 @@ private:
 #   endif
 
     Controller *m_controller;
-    IStrategy *m_donate     = nullptr;
     IStrategy *m_strategy   = nullptr;
     NetworkState *m_state   = nullptr;
     Timer *m_timer          = nullptr;

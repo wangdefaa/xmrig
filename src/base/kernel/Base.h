@@ -32,6 +32,7 @@ namespace xmrig {
 
 class Api;
 class BasePrivate;
+class CCClient;
 class Config;
 class IBaseListener;
 class Process;
@@ -51,6 +52,9 @@ public:
     virtual void stop();
 
     Api *api() const;
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    CCClient *ccClient() const;
+#   endif
     bool isBackground() const;
     bool reload(const rapidjson::Value &json);
     Config *config() const;

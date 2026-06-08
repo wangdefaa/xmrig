@@ -39,6 +39,10 @@
 #   include "base/net/tls/TlsConfig.h"
 #endif
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "cc/CCClientConfig.h"
+#endif
+
 
 void xmrig::BaseTransform::load(JsonChain &chain, Process *process, IConfigTransform &transform)
 {
@@ -238,15 +242,53 @@ void xmrig::BaseTransform::transform(rapidjson::Document &doc, int key, const ch
         return set(doc, BaseConfig::kTls, TlsConfig::kGen, arg);
 #   endif
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    case IConfig::CCRebootCmd: /* --cc-reboot-cmd */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kRebootCmd, arg);
+
+    case IConfig::CCWorkerId: /* --cc-worker-id */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kWorkerId, arg);
+
+    case IConfig::CCUrl: /* --cc-url */
+    {
+        if (!doc.HasMember(BaseConfig::kCCClient)) {
+            doc.AddMember(rapidjson::StringRef(BaseConfig::kCCClient), rapidjson::kObjectType, doc.GetAllocator());
+        }
+
+        rapidjson::Value& object = doc[BaseConfig::kCCClient];
+        if (!object.HasMember(CCClientConfig::kServers)) {
+            object.AddMember(rapidjson::StringRef(CCClientConfig::kServers), rapidjson::kArrayType, doc.GetAllocator());
+        }
+
+        rapidjson::Value& array = doc[BaseConfig::kCCClient][CCClientConfig::kServers];
+        if (array.Size() == 0 || CCClientConfig::Server(array[array.Size() - 1]).isValid()) {
+            array.PushBack(rapidjson::kObjectType, doc.GetAllocator());
+        }
+
+        set(doc, array[array.Size() - 1], CCClientConfig::kUrl, arg);
+        break;
+    }
+
+    case IConfig::CCAccessToken: /* --cc-access-token */
+        return addToNode(doc, BaseConfig::kCCClient, CCClientConfig::kServers, CCClientConfig::kAccessToken, arg);
+
+    case IConfig::CCProxyServer: /* --cc-http-proxy */
+        return addToNode(doc, BaseConfig::kCCClient, CCClientConfig::kServers, CCClientConfig::kProxyServer, arg);
+
+    case IConfig::CCSocksProxyServer: /* --cc-socks-proxy */
+        return addToNode(doc, BaseConfig::kCCClient, CCClientConfig::kServers, CCClientConfig::kSocksProxyServer, arg);
+#   endif
+
     case IConfig::RetriesKey:       /* --retries */
     case IConfig::RetryPauseKey:    /* --retry-pause */
     case IConfig::PrintTimeKey:     /* --print-time */
     case IConfig::HttpPort:         /* --http-port */
-    case IConfig::DonateLevelKey:   /* --donate-level */
     case IConfig::DaemonPollKey:    /* --daemon-poll-interval */
     case IConfig::DaemonJobTimeoutKey: /* --daemon-job-timeout */
     case IConfig::DnsTtlKey:        /* --dns-ttl */
     case IConfig::DaemonZMQPortKey: /* --daemon-zmq-port */
+    case IConfig::CCUpdateInterval:     /* --cc-update-interval-s */
+    case IConfig::CCRetriesToFailover:  /* --cc-retries-to-failover */
         return transformUint64(doc, key, static_cast<uint64_t>(strtol(arg, nullptr, 10)));
 
     case IConfig::BackgroundKey:  /* --background */
@@ -261,11 +303,16 @@ void xmrig::BaseTransform::transform(rapidjson::Document &doc, int key, const ch
     case IConfig::VerboseKey:     /* --verbose */
     case IConfig::DnsIPv4Key:     /* --ipv4 */
     case IConfig::DnsIPv6Key:     /* --ipv6 */
+    case IConfig::CCDaemonizedKey:         /* --daemonized */
+    case IConfig::CCUploadConfigOnStartup: /* --cc-upload-config-on-start */
+    case IConfig::CCUseRemoteLog:          /* --cc-use-remote-logging */
+    case IConfig::CCUseTLS:                /* --cc-use-tls */
         return transformBoolean(doc, key, true);
 
     case IConfig::ColorKey:          /* --no-color */
     case IConfig::HttpRestrictedKey: /* --http-no-restricted */
     case IConfig::NoTitleKey:        /* --no-title */
+    case IConfig::CCEnabledKey:      /* --cc-disabled */
         return transformBoolean(doc, key, false);
 
     default:
@@ -327,6 +374,23 @@ void xmrig::BaseTransform::transformBoolean(rapidjson::Document &doc, int key, b
     case IConfig::DnsIPv6Key: /* --ipv6 */
         return set(doc, DnsConfig::kField, DnsConfig::kIPv, 6);
 
+    case IConfig::CCDaemonizedKey: /* --daemonized */
+        return set(doc, BaseConfig::kDaemonized, enable);
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    case IConfig::CCEnabledKey: /* --cc-disabled */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kEnabled, enable);
+
+    case IConfig::CCUploadConfigOnStartup: /* --cc-upload-config-on-start */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kUploadConfigOnStartup, enable);
+
+    case IConfig::CCUseRemoteLog: /* --cc-use-remote-logging */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kUseRemoteLog, enable);
+
+    case IConfig::CCUseTLS: /* --cc-use-tls */
+        return addToNode<bool>(doc, BaseConfig::kCCClient, CCClientConfig::kServers, CCClientConfig::kUseTLS, enable);
+#   endif
+
     default:
         break;
     }
@@ -341,12 +405,6 @@ void xmrig::BaseTransform::transformUint64(rapidjson::Document &doc, int key, ui
 
     case IConfig::RetryPauseKey: /* --retry-pause */
         return set(doc, Pools::kRetryPause, arg);
-
-    case IConfig::DonateLevelKey: /* --donate-level */
-        return set(doc, Pools::kDonateLevel, arg);
-
-    case IConfig::ProxyDonateKey: /* --donate-over-proxy */
-        return set(doc, Pools::kDonateOverProxy, arg);
 
     case IConfig::HttpPort: /* --http-port */
         m_http = true;
@@ -367,6 +425,14 @@ void xmrig::BaseTransform::transformUint64(rapidjson::Document &doc, int key, ui
 
     case IConfig::DaemonZMQPortKey:  /* --daemon-zmq-port */
         return add(doc, Pools::kPools, Pool::kDaemonZMQPort, arg);
+#   endif
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    case IConfig::CCUpdateInterval:  /* --cc-update-interval-s */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kUpdateInterval, arg);
+
+    case IConfig::CCRetriesToFailover:  /* --cc-retries-to-failover */
+        return set(doc, BaseConfig::kCCClient, CCClientConfig::kRetriesToFailover, arg);
 #   endif
 
     default:

@@ -68,6 +68,13 @@
 #endif
 
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include <uv.h>
+#   include "cc/CCClient.h"
+#   include "crypto/common/VirtualMemory.h"
+#endif
+
+
 namespace xmrig {
 
 
@@ -152,7 +159,6 @@ public:
         reply.AddMember("kind",         APP_KIND, allocator);
         reply.AddMember("ua",           Platform::userAgent().toJSON(), allocator);
         reply.AddMember("cpu",          Cpu::toJSON(doc), allocator);
-        reply.AddMember("donate_level", controller->config()->pools().donateLevel(), allocator);
         reply.AddMember("paused",       !enabled, allocator);
 
         Value algo(kArrayType);
@@ -414,6 +420,10 @@ xmrig::Miner::Miner(Controller *controller)
     controller->api()->addListener(this);
 #   endif
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    controller->ccClient()->addClientStatusListener(this);
+#   endif
+
     d_ptr->timer = new Timer(this);
 
     d_ptr->backends.reserve(3);
@@ -550,7 +560,7 @@ void xmrig::Miner::setEnabled(bool enabled)
 }
 
 
-void xmrig::Miner::setJob(const Job &job, bool donate)
+void xmrig::Miner::setJob(const Job &job)
 {
     for (IBackend *backend : d_ptr->backends) {
         backend->prepare(job);
@@ -573,7 +583,7 @@ void xmrig::Miner::setJob(const Job &job, bool donate)
 
     mutex.lock();
 
-    const uint8_t index = donate ? 1 : 0;
+    const uint8_t index = 0;
     const bool same_job_index = d_ptr->job.index() == index;
 
     d_ptr->reset = !(d_ptr->job.index() == 1 && index == 0 && d_ptr->userJobId == job.id());
@@ -753,5 +763,42 @@ void xmrig::Miner::onDatasetReady()
     }
 
     d_ptr->handleJobChange();
+}
+#endif
+
+
+#ifdef XMRIG_FEATURE_CC_CLIENT
+void xmrig::Miner::onUpdateRequest(ClientStatus& clientStatus)
+{
+    clientStatus.setCurrentStatus(d_ptr->enabled ? ClientStatus::RUNNING : ClientStatus::PAUSED);
+
+    double t[3] = { 0.0, 0.0, 0.0 };
+    int threads = 0;
+
+    for (IBackend *backend : d_ptr->backends) {
+        const Hashrate *hr = backend->hashrate();
+        if (!hr) {
+            continue;
+        }
+
+        const auto h0 = hr->calc(Hashrate::ShortInterval);
+        const auto h1 = hr->calc(Hashrate::MediumInterval);
+        const auto h2 = hr->calc(Hashrate::LargeInterval);
+
+        if (h0.first) { t[0] += h0.second; }
+        if (h1.first) { t[1] += h1.second; }
+        if (h2.first) { t[2] += h2.second; }
+
+        threads += static_cast<int>(hr->threads());
+    }
+
+    clientStatus.setCurrentThreads(threads);
+    clientStatus.setTotalMemory(uv_get_total_memory());
+    clientStatus.setFreeMemory(uv_get_free_memory());
+    clientStatus.setHugepages(VirtualMemory::isHugepagesAvailable());
+    clientStatus.setHashrateShort(t[0]);
+    clientStatus.setHashrateMedium(t[1]);
+    clientStatus.setHashrateLong(t[2]);
+    clientStatus.setHashrateHighest(d_ptr->maxHashrate[d_ptr->algorithm]);
 }
 #endif

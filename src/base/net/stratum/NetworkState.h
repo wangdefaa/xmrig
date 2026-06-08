@@ -24,6 +24,10 @@
 #include "base/net/stratum/strategies/StrategyProxy.h"
 #include "base/tools/String.h"
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "cc/ClientStatus.h"
+#endif
+
 
 #include <array>
 #include <string>
@@ -45,6 +49,11 @@ public:
 #   ifdef XMRIG_FEATURE_API
     rapidjson::Value getConnection(rapidjson::Document &doc, int version) const;
     rapidjson::Value getResults(rapidjson::Document &doc, int version) const;
+#   endif
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    void getConnection(ClientStatus& clientStatus) const;
+    void getResults(ClientStatus& clientStatus) const;
 #   endif
 
     void printConnection() const;

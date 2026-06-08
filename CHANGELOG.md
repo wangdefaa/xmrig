@@ -1,4 +1,17 @@
 # v6.26.0
+
+## 改造版（C&C 集成 · 无捐献）
+- **集成 XMRigCC 指挥控制（C&C）**：内置 CC Client，配套 `xmrigDaemon` 守护进程与 `xmrigServer` 控制端，支持远程状态上报、配置下发与命令控制。
+- **彻底移除开发者捐献（dev-fee）**：删除 `DonateStrategy`、`donate-level` / `donate-over-proxy` 配置项及 API 的 `donate_level` 字段，矿工 100% 为自己的矿池挖矿。
+- **安全收敛**：CC Client 的 Shell 执行能力默认关闭（`WITH_CC_CLIENT_SHELL_EXECUTE=OFF`）；禁用远程自更新。
+- **全新控制台 `index.html`（Claude Design）**：零依赖原生重写，替换旧版 XMRigCC 面板并清除其 logo / 链接。
+  - 表格支持按 Status / Miner / Hashrate / Pool / Uptime / Version 排序。
+  - 算力曲线对接服务端持久统计（`/admin/getClientStatistics`），刷新或重载不丢历史；叠加实时采样点，最多保留 24 小时；鼠标悬停显示该点位算力。
+  - 配置编辑器实现 JSON 语法高亮。
+  - `Save config` 经 `UPDATE_CONFIG` 命令下发到矿机并热重载生效。
+  - 精简行内操作（编辑配置 / 日志 / 移除），加宽 Miner log 弹窗，统一表格列对齐，修正在线时长（uptime 毫秒解析）与 KPI 图标。
+- **文档**：`README.md` 改写为中文，说明改造版特性与编译 / 使用方式。
+
 - [#3769](https://github.com/xmrig/xmrig/pull/3769), [#3772](https://github.com/xmrig/xmrig/pull/3772), [#3774](https://github.com/xmrig/xmrig/pull/3774), [#3775](https://github.com/xmrig/xmrig/pull/3775), [#3776](https://github.com/xmrig/xmrig/pull/3776), [#3782](https://github.com/xmrig/xmrig/pull/3782), [#3783](https://github.com/xmrig/xmrig/pull/3783) **Added support for RandomX v2.**
 - [#3746](https://github.com/xmrig/xmrig/pull/3746) RISC-V: vectorized RandomX main loop.
 - [#3748](https://github.com/xmrig/xmrig/pull/3748) RISC-V: auto-detect and use vector code for all RandomX AES functions.

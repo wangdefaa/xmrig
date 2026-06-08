@@ -30,6 +30,10 @@
 #include "base/kernel/interfaces/ITimerListener.h"
 #include "base/tools/Object.h"
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "base/cc/interfaces/IClientStatusListener.h"
+#endif
+
 
 namespace xmrig {
 
@@ -41,6 +45,9 @@ class IBackend;
 
 
 class Miner : public ITimerListener, public IBaseListener, public IApiListener, public IRxListener
+#ifdef XMRIG_FEATURE_CC_CLIENT
+            , public IClientStatusListener
+#endif
 {
 public:
     XMRIG_DISABLE_COPY_MOVE_DEFAULT(Miner)
@@ -56,12 +63,16 @@ public:
     void execCommand(char command);
     void pause();
     void setEnabled(bool enabled);
-    void setJob(const Job &job, bool donate);
+    void setJob(const Job &job);
     void stop();
 
 protected:
     void onConfigChanged(Config *config, Config *previousConfig) override;
     void onTimer(const Timer *timer) override;
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    void onUpdateRequest(ClientStatus& clientStatus) override;
+#   endif
 
 #   ifdef XMRIG_FEATURE_API
     void onRequest(IApiRequest &request) override;

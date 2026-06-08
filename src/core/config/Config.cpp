@@ -299,6 +299,10 @@ void xmrig::Config::getJSON(rapidjson::Document &doc) const
     doc.AddMember(StringRef(kTls),                      m_tls.toJSON(doc), allocator);
 #   endif
 
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    doc.AddMember(StringRef(kCCClient),                 m_ccClient.toJSON(doc), allocator);
+#   endif
+
     doc.AddMember(StringRef(DnsConfig::kField),         Dns::config().toJSON(doc), allocator);
     doc.AddMember(StringRef(kUserAgent),                m_userAgent.toJSON(), allocator);
     doc.AddMember(StringRef(kVerbose),                  Log::verbose(), allocator);

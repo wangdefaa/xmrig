@@ -46,8 +46,6 @@ static const option options[] = {
     { "config",                1, nullptr, IConfig::ConfigKey             },
     { "cpu-affinity",          1, nullptr, IConfig::CPUAffinityKey        },
     { "cpu-priority",          1, nullptr, IConfig::CPUPriorityKey        },
-    { "donate-level",          1, nullptr, IConfig::DonateLevelKey        },
-    { "donate-over-proxy",     1, nullptr, IConfig::ProxyDonateKey        },
     { "dry-run",               0, nullptr, IConfig::DryRunKey             },
     { "keepalive",             0, nullptr, IConfig::KeepAliveKey          },
     { "log-file",              1, nullptr, IConfig::LogFileKey            },
@@ -150,6 +148,21 @@ static const option options[] = {
 #   endif
 #   ifdef XMRIG_FEATURE_DMI
     { "no-dmi",                0, nullptr, IConfig::DmiKey                },
+#   endif
+    { "daemonized",            0, nullptr, IConfig::CCDaemonizedKey       },
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    { "cc-disabled",               0, nullptr, IConfig::CCEnabledKey            },
+    { "cc-use-tls",                0, nullptr, IConfig::CCUseTLS                },
+    { "cc-use-remote-logging",     0, nullptr, IConfig::CCUseRemoteLog          },
+    { "cc-reboot-cmd",             1, nullptr, IConfig::CCRebootCmd             },
+    { "cc-url",                    1, nullptr, IConfig::CCUrl                   },
+    { "cc-access-token",           1, nullptr, IConfig::CCAccessToken           },
+    { "cc-http-proxy",             1, nullptr, IConfig::CCProxyServer           },
+    { "cc-socks-proxy",            1, nullptr, IConfig::CCSocksProxyServer      },
+    { "cc-worker-id",              1, nullptr, IConfig::CCWorkerId              },
+    { "cc-update-interval-s",      1, nullptr, IConfig::CCUpdateInterval        },
+    { "cc-retries-to-failover",    1, nullptr, IConfig::CCRetriesToFailover     },
+    { "cc-upload-config-on-start", 0, nullptr, IConfig::CCUploadConfigOnStartup },
 #   endif
     { nullptr,                 0, nullptr, 0 }
 };

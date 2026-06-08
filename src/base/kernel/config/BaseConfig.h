@@ -30,6 +30,10 @@
 #   include "base/net/tls/TlsConfig.h"
 #endif
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "cc/CCClientConfig.h"
+#endif
+
 
 namespace xmrig {
 
@@ -55,6 +59,8 @@ public:
     static const char *kUserAgent;
     static const char *kVerbose;
     static const char *kWatch;
+    static const char *kCCClient;
+    static const char *kDaemonized;
 
 #   ifdef XMRIG_FEATURE_TLS
     static const char *kTls;
@@ -74,6 +80,11 @@ public:
     inline const String &apiWorkerId() const                { return m_apiWorkerId; }
     inline const Title &title() const                       { return m_title; }
     inline uint32_t printTime() const                       { return m_printTime; }
+    inline bool isDaemonized() const                        { return m_daemonized; }
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    inline CCClientConfig &ccClient()                       { return m_ccClient; }
+#   endif
 
 #   ifdef XMRIG_FEATURE_TLS
     inline const TlsConfig &tls() const                     { return m_tls; }
@@ -104,6 +115,11 @@ protected:
     String m_userAgent;
     Title m_title;
     uint32_t m_printTime    = 60;
+    bool m_daemonized       = false;
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    CCClientConfig m_ccClient;
+#   endif
 
 #   ifdef XMRIG_FEATURE_TLS
     TlsConfig m_tls;

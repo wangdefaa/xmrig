@@ -61,6 +61,10 @@ public:
 #   ifdef XMRIG_FEATURE_PROFILING
     static const char* profiler();
 #   endif
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    static const char *cc();
+#   endif
 };
 
 

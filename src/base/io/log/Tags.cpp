@@ -129,3 +129,13 @@ const char* xmrig::Tags::profiler()
     return tag;
 }
 #endif
+
+
+#ifdef XMRIG_FEATURE_CC_CLIENT
+const char *xmrig::Tags::cc()
+{
+    static const char *tag = YELLOW_BG_BOLD(WHITE_BOLD_S " cc      ");
+
+    return tag;
+}
+#endif

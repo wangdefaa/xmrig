@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(xmrig)
+project(xxxig)
 
 option(WITH_HWLOC           "Enable hwloc support" ON)
 option(WITH_CN_LITE         "Enable CryptoNight-Lite algorithms family" ON)
@@ -32,6 +32,9 @@ option(WITH_VAES            "Enable VAES instructions for Cryptonight" ON)
 option(WITH_BENCHMARK       "Enable builtin RandomX benchmark and stress test" ON)
 option(WITH_SECURE_JIT      "Enable secure access to JIT memory" OFF)
 option(WITH_DMI             "Enable DMI/SMBIOS reader" ON)
+option(WITH_CC_SERVER       "Build CC server (xxxigServer) and watchdog daemon (xxxigDaemon)" OFF)
+option(WITH_CC_CLIENT       "Build miner with embedded CC client (report to / controlled by xxxigServer)" OFF)
+option(WITH_CC_CLIENT_SHELL_EXECUTE "Allow CC server to run shell commands on this miner (REBOOT/EXECUTE) - INSECURE" OFF)
 
 option(BUILD_STATIC         "Build static binary" OFF)
 option(ARM_V8               "Force ARMv8 (64 bit) architecture, use with caution if automatic detection fails, but you sure it may work" OFF)
@@ -66,7 +69,6 @@ set(HEADERS
     src/net/JobResult.h
     src/net/JobResults.h
     src/net/Network.h
-    src/net/strategies/DonateStrategy.h
     src/Summary.h
     src/version.h
    )
@@ -113,7 +115,6 @@ set(SOURCES
     src/core/Taskbar.cpp
     src/net/JobResults.cpp
     src/net/Network.cpp
-    src/net/strategies/DonateStrategy.cpp
     src/Summary.cpp
     src/xmrig.cpp
    )
@@ -227,6 +228,7 @@ endif()
 
 include(src/hw/api/api.cmake)
 include(src/hw/dmi/dmi.cmake)
+include(cmake/cc.cmake)
 
 include_directories(src)
 include_directories(src/3rdparty)
@@ -238,6 +240,22 @@ endif()
 
 add_executable(${CMAKE_PROJECT_NAME} ${HEADERS} ${SOURCES} ${SOURCES_OS} ${HEADERS_CRYPTO} ${SOURCES_CRYPTO} ${SOURCES_SYSLOG} ${TLS_SOURCES} ${XMRIG_ASM_SOURCES})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${XMRIG_ASM_LIBRARY} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${CPUID_LIB} ${ARGON2_LIBRARY} ${ETHASH_LIBRARY} ${GHOSTRIDER_LIBRARY})
+
+# ============================================================================
+# CC Client（嵌入矿工）——移植自 XMRigCC。默认关闭，-DWITH_CC_CLIENT=ON 启用。
+# ============================================================================
+if (WITH_CC_CLIENT)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${SOURCES_CC_CLIENT})
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE XMRIG_FEATURE_CC_CLIENT)
+
+    if (WITH_TLS AND OPENSSL_FOUND)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
+    endif()
+
+    if (WITH_CC_CLIENT_SHELL_EXECUTE)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE XMRIG_FEATURE_CC_CLIENT_SHELL_EXECUTE)
+    endif()
+endif()
 
 if (WIN32)
     if (NOT ARM_TARGET)
@@ -253,4 +271,26 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang AND CMAKE_BUILD_TYPE STREQUAL Release AND NOT CMAKE_GENERATOR STREQUAL Xcode)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>")
+endif()
+
+
+# ============================================================================
+# XMRigCC: xmrigDaemon（进程看护）与 xmrigServer（C&C 服务器）
+# 移植自 XMRigCC。默认关闭，-DWITH_CC_SERVER=ON 启用。
+# ============================================================================
+if (WITH_CC_SERVER)
+    # --- 守护进程：拉起并看护 miner，异常退出自动重启，支持二进制热更新 ---
+    add_executable(xxxigDaemon src/cc/XMRigd.cpp)
+    target_compile_definitions(xxxigDaemon PRIVATE MINER_EXECUTABLE_NAME=${CMAKE_PROJECT_NAME})
+    target_link_libraries(xxxigDaemon ${UV_LIBRARIES} ${EXTRA_LIBS})
+
+    # --- C&C 服务器：基于 cpp-httplib 的独立服务，不依赖挖矿核心 ---
+    add_executable(xxxigServer ${SOURCES_CC_SERVER} ${SOURCES_CC_COMMON} ${SOURCES_SYSLOG})
+    target_compile_definitions(xxxigServer PRIVATE XMRIG_FEATURE_CC_SERVER CXXOPTS_NO_RTTI)
+    target_link_libraries(xxxigServer ${UV_LIBRARIES} ${EXTRA_LIBS})
+
+    if (WITH_TLS AND OPENSSL_FOUND)
+        target_compile_definitions(xxxigServer PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
+        target_link_libraries(xxxigServer ${OPENSSL_LIBRARIES})
+    endif()
 endif()

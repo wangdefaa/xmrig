@@ -31,8 +31,15 @@
 #include "base/kernel/interfaces/ISignalListener.h"
 #include "base/tools/Object.h"
 
+#ifdef XMRIG_FEATURE_CC_CLIENT
+#   include "base/cc/interfaces/ICommandListener.h"
+#   include "cc/ControlCommand.h"
+#   include "cc/CCClient.h"
+#endif
+
 
 #include <memory>
+#include <string>
 
 
 namespace xmrig {
@@ -46,6 +53,9 @@ class Signals;
 
 
 class App : public IConsoleListener, public ISignalListener
+#ifdef XMRIG_FEATURE_CC_CLIENT
+          , public ICommandListener
+#endif
 {
 public:
     XMRIG_DISABLE_COPY_MOVE_DEFAULT(App)
@@ -58,10 +68,20 @@ public:
 protected:
     void onConsoleCommand(char command) override;
     void onSignal(int signum) override;
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    void onCommandReceived(ControlCommand& command) override;
+#   endif
 
 private:
     bool background(int &rc);
-    void close();
+    void close(int rc = 0);   // XMRigCC: 默认 RC_OK(0)；CC 用 RC_RESTART 通知 daemon 重启
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    void reboot();
+    void execute(const std::string& command);
+#   endif
+
+    int m_rc {0};             // XMRigCC: 退出码缓存，RC_OK == 0
 
     std::shared_ptr<Console> m_console;
     std::shared_ptr<Controller> m_controller;

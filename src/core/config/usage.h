@@ -72,8 +72,6 @@ static inline const std::string &usage()
     u += "  -r, --retries=N               number of times to retry before switch to backup server (default: 5)\n";
     u += "  -R, --retry-pause=N           time to pause between retries (default: 5)\n";
     u += "      --user-agent              set custom user-agent string for pool\n";
-    u += "      --donate-level=N          donate level, default 1%% (1 minute in 100 minutes)\n";
-    u += "      --donate-over-proxy=N     control donate over xmrig-proxy feature\n";
 
     u += "\nCPU backend:\n";
 
@@ -149,6 +147,21 @@ static inline const std::string &usage()
     u += "      --tls-protocols=N         enable specified TLS protocols, example: \"TLSv1 TLSv1.1 TLSv1.2 TLSv1.3\"\n";
     u += "      --tls-ciphers=S           set list of available ciphers (TLSv1.2 and below)\n";
     u += "      --tls-ciphersuites=S      set list of available TLSv1.3 ciphersuites\n";
+#   endif
+
+#   ifdef XMRIG_FEATURE_CC_CLIENT
+    u += "\nCC feature:\n";
+    u += "      --cc-disabled                 disable CC Client feature\n";
+    u += "      --cc-url=URL                  url of the CC Server\n";
+    u += "      --cc-access-token=T           access token for CC Server\n";
+    u += "      --cc-http-proxy=URL           http_proxy url to use for communication with the CC Server\n";
+    u += "      --cc-socks-proxy=URL          socks_proxy url to use for communication with the CC Server\n";
+    u += "      --cc-worker-id=ID             custom worker-id for CC Server\n";
+    u += "      --cc-update-interval-s=N      status update interval in seconds (default: 10 min: 1)\n";
+    u += "      --cc-use-tls                  enable tls encryption for CC communication\n";
+    u += "      --cc-use-remote-logging       enable remote logging on CC Server\n";
+    u += "      --cc-upload-config-on-start   upload current miner config to CC Server on startup\n";
+    u += "      --cc-reboot-cmd=CMD           command/bat to execute to Reboot miner machine\n";
 #   endif
 
     u += "\nLogging:\n";

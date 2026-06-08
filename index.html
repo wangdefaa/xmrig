@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>XMRig · Control Dashboard</title>
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --bg:           #EDE7D9;
+  --surface:      #FAF8F2;
+  --surface-sunk: #F1EBDD;
+  --ink:          #2A2620;
+  --ink-soft:     #6B655A;
+  --ink-faint:    #9A9183;
+  --line:         #E3DCCE;
+  --accent:       #C8612E;
+  --accent-hover: #B5551F;
+  --accent-tint:  rgba(200, 97, 46, 0.10);
+  --dark-block:   #1C1A16;
+  --dark-hover:   #2C2924;
+  --ok:           #5C7A4A;
+  --warn:         #C8954A;
+  --down:         #A89F8E;
+
+  --shadow-sm: 0 1px 2px rgba(60,50,30,.06);
+  --shadow-md: 0 8px 24px -8px rgba(60,50,30,.14);
+  --shadow-lg: 0 24px 60px -18px rgba(40,32,18,.30);
+
+  --r-card: 20px;
+  --r-btn: 12px;
+  --r-input: 10px;
+
+  --serif: ui-serif, "Tiempos Headline", Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+
+  --ease: cubic-bezier(.32,.72,.32,1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:           #1C1B17;
+    --surface:      #26241F;
+    --surface-sunk: #201F1A;
+    --ink:          #ECE7DA;
+    --ink-soft:     #A8A192;
+    --ink-faint:    #6E685B;
+    --line:         #37342B;
+    --accent:       #D97757;
+    --accent-hover: #E08B6E;
+    --accent-tint:  rgba(217, 119, 87, 0.12);
+    --dark-block:   #0F0E0C;
+    --dark-hover:   #1A1814;
+    --ok:           #7E9A6B;
+    --warn:         #D6A95E;
+    --down:         #6E685B;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.30);
+    --shadow-md: 0 8px 24px -8px rgba(0,0,0,.55);
+    --shadow-lg: 0 24px 60px -18px rgba(0,0,0,.65);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:           #1C1B17;
+  --surface:      #26241F;
+  --surface-sunk: #201F1A;
+  --ink:          #ECE7DA;
+  --ink-soft:     #A8A192;
+  --ink-faint:    #6E685B;
+  --line:         #37342B;
+  --accent:       #D97757;
+  --accent-hover: #E08B6E;
+  --accent-tint:  rgba(217, 119, 87, 0.12);
+  --dark-block:   #0F0E0C;
+  --dark-hover:   #1A1814;
+  --ok:           #7E9A6B;
+  --warn:         #D6A95E;
+  --down:         #6E685B;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.30);
+  --shadow-md: 0 8px 24px -8px rgba(0,0,0,.55);
+  --shadow-lg: 0 24px 60px -18px rgba(0,0,0,.65);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background-color: var(--bg);
+  /* subtle paper grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1,h2,h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+button { font-family: inherit; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 64px; }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  backdrop-filter: blur(10px) saturate(1.2);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+  display: flex; align-items: center; gap: 20px;
+}
+.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.brand .logo { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.brand .logo .glyph { color: var(--accent); }
+.brand .sub {
+  font-size: 12.5px; color: var(--ink-soft); letter-spacing: .04em; text-transform: uppercase;
+  border-left: 1px solid var(--line); padding-left: 12px;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.conn {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft);
+  padding: 6px 12px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; box-shadow: var(--shadow-sm);
+}
+.conn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--down); flex: none; }
+.conn.live .dot { background: var(--ok); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent); animation: pulse 2.4s var(--ease) infinite; }
+.conn.demo .dot { background: var(--warn); }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);} 70%{box-shadow:0 0 0 7px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
+.refreshed { font-size: 12.5px; color: var(--ink-faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 680px){ .refreshed{ display:none; } .brand .sub{ display:none; } }
+
+/* icon button (calculator-key feel) */
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); cursor: pointer;
+  display: grid; place-items: center; box-shadow: var(--shadow-sm);
+  transition: transform .15s var(--ease), background .15s var(--ease), box-shadow .15s var(--ease);
+}
+.icon-btn:hover { background: var(--surface-sunk); transform: translateY(-1px); }
+.icon-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(60,50,30,.12); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* ============================================================
+   SECTION HEADINGS
+   ============================================================ */
+.section-head { display: flex; align-items: baseline; gap: 12px; margin: 36px 2px 16px; }
+.section-head h2 { font-size: 19px; }
+.section-head .meta { font-size: 12.5px; color: var(--ink-faint); }
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+@media (max-width: 900px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 480px){ .kpi-grid{ grid-template-columns: 1fr; } }
+.kpi {
+  background: var(--surface); border-radius: var(--r-card); padding: 22px 22px 20px;
+  box-shadow: var(--shadow-md); border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  position: relative; overflow: hidden;
+}
+.kpi .top { display: flex; align-items: flex-start; justify-content: space-between; }
+.kpi .label { font-family: var(--serif); font-size: 14px; color: var(--ink-soft); font-weight: 500; }
+.kpi .ico { color: var(--ink-faint); }
+.kpi .ico svg { width: 20px; height: 20px; }
+.kpi .value { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 36px; font-weight: 600; letter-spacing: -0.02em; margin-top: 14px; line-height: 1; }
+.kpi .unit { font-size: 15px; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
+.kpi .trend { margin-top: 10px; font-size: 12.5px; color: var(--ink-faint); display: flex; align-items: center; gap: 6px; }
+.kpi .trend.up { color: var(--ok); }
+.kpi .trend.down { color: var(--accent); }
+.kpi.accentbar::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--accent); opacity:.0; }
+
+/* ============================================================
+   CARD (chart + table containers)
+   ============================================================ */
+.card {
+  background: var(--surface); border-radius: var(--r-card);
+  box-shadow: var(--shadow-md); border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  overflow: hidden;
+}
+.card-head {
+  display: flex; align-items: center; gap: 14px; padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.card-head h2 { font-size: 18px; }
+.card-head .meta { font-size: 12.5px; color: var(--ink-faint); }
+.card-head .spacer { margin-left: auto; }
+
+/* collapsible */
+.collapse-btn {
+  background: none; border: none; color: var(--ink-soft); cursor: pointer; padding: 4px;
+  display: grid; place-items: center; border-radius: 8px; transition: transform .2s var(--ease), background .15s;
+}
+.collapse-btn:hover { background: var(--surface-sunk); }
+.collapse-btn svg { width: 18px; height: 18px; }
+.card.collapsed .collapse-btn { transform: rotate(-90deg); }
+.card.collapsed .card-body { display: none; }
+
+/* ============================================================
+   CHART
+   ============================================================ */
+.chart-body { padding: 8px 12px 16px; }
+.chart-wrap { position: relative; height: 240px; }
+canvas { display: block; width: 100%; height: 100%; }
+.chart-legend { display: flex; gap: 18px; padding: 6px 14px 0; font-size: 12.5px; color: var(--ink-soft); }
+.chart-legend .key { display: flex; align-items: center; gap: 7px; }
+.chart-legend .swatch { width: 14px; height: 3px; border-radius: 2px; }
+.chart-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--accent); opacity: .5; pointer-events: none; display: none; }
+.chart-tip {
+  position: absolute; display: none; pointer-events: none; z-index: 5;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow-md); padding: 8px 10px; font-size: 12px; min-width: 124px;
+}
+.chart-tip .tt-time { font-family: var(--mono); color: var(--ink-faint); font-size: 11px; margin-bottom: 4px; }
+.chart-tip .tt-row { display: flex; justify-content: space-between; gap: 14px; }
+.chart-tip .tt-k { color: var(--ink-soft); }
+.chart-tip .tt-v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+.table-scroll { overflow-x: auto; }
+table.miners { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+table.miners thead th {
+  background: var(--surface-sunk); color: var(--ink-soft); font-weight: 500;
+  text-align: left; padding: 12px 16px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+  position: sticky; top: 0;
+}
+table.miners thead th.num { text-align: right; }
+table.miners thead th.sortable { cursor: pointer; user-select: none; transition: color .12s var(--ease); }
+table.miners thead th.sortable:hover { color: var(--ink); }
+table.miners thead th.sorted { color: var(--ink); }
+table.miners thead th .arrow { margin-left: 5px; font-size: 9px; opacity: 0; }
+table.miners thead th.sorted .arrow { opacity: .85; }
+table.miners tbody td { padding: 14px 16px; border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); vertical-align: middle; }
+table.miners tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-sunk) 45%, transparent); }
+table.miners tbody tr { transition: background .12s var(--ease); }
+table.miners tbody tr:hover td { background: var(--accent-tint); }
+td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.lnum { text-align: left; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.miners tbody td { white-space: nowrap; }
+table.miners .miner-sub { white-space: normal; }
+.miner-name { font-weight: 500; }
+.miner-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500;
+  padding: 4px 11px 4px 9px; border-radius: 999px; white-space: nowrap;
+  background: var(--surface-sunk); color: var(--ink-soft);
+}
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.badge.ok   { color: var(--ok);   background: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
+.badge.ok .dot   { background: var(--ok); }
+.badge.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
+.badge.warn .dot { background: var(--warn); }
+.badge.down { color: var(--ink-soft); background: var(--surface-sunk); }
+.badge.down .dot { background: var(--down); }
+
+.hr-val { font-weight: 600; }
+.hr-unit { color: var(--ink-faint); font-size: 12px; margin-left: 3px; }
+
+/* row actions */
+.row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.act {
+  width: 32px; height: 32px; border-radius: 9px; border: 1px solid transparent; background: none;
+  color: var(--ink-soft); cursor: pointer; display: grid; place-items: center;
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.act:hover { background: var(--surface-sunk); color: var(--ink); }
+.act.danger:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.act svg { width: 16px; height: 16px; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  font-size: 14px; font-weight: 500; padding: 9px 16px; border-radius: var(--r-btn);
+  cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px;
+  transition: transform .14s var(--ease), background .14s var(--ease), box-shadow .14s var(--ease);
+}
+.btn svg { width: 15px; height: 15px; }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-primary:active { box-shadow: inset 0 2px 5px rgba(0,0,0,.22); }
+.btn-danger { background: var(--dark-block); color: #F2EFE6; box-shadow: var(--shadow-sm); }
+.btn-danger:hover { background: var(--dark-hover); transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { background: var(--surface-sunk); }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.overlay {
+  position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  background: rgba(40,35,25,.45); backdrop-filter: blur(6px); padding: 24px;
+}
+.overlay.open { display: flex; animation: fade .2s var(--ease); }
+@keyframes fade { from{opacity:0;} to{opacity:1;} }
+.modal {
+  width: 100%; max-width: 620px; max-height: 86vh; background: var(--surface);
+  border-radius: var(--r-card); box-shadow: var(--shadow-lg); display: flex; flex-direction: column;
+  border: 1px solid var(--line); animation: rise .24s var(--ease);
+}
+.modal.wide { max-width: 760px; }
+.modal.wide-log { max-width: 940px; }
+@keyframes rise { from{opacity:0; transform: translateY(12px) scale(.99);} to{opacity:1; transform:none;} }
+.modal-head { display: flex; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.modal-head h2 { font-size: 19px; }
+.modal-head .sub { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); }
+.modal-head .x { margin-left: auto; }
+.modal-body { padding: 20px 24px; overflow: auto; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; }
+
+.code-wrap { position: relative; min-height: 320px; }
+.code-hl, .code-area {
+  margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.6; letter-spacing: 0;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-input);
+  tab-size: 2; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
+}
+.code-hl {
+  position: absolute; inset: 0; overflow: auto; pointer-events: none;
+  background: var(--surface-sunk); color: var(--ink);
+}
+.code-hl code { font: inherit; }
+.code-area {
+  position: relative; width: 100%; min-height: 320px; resize: vertical;
+  background: transparent; color: transparent; caret-color: var(--ink); border-color: transparent;
+}
+.code-area:focus { outline: none; }
+.code-wrap:focus-within .code-hl { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+.code-area::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.tok-key  { color: var(--accent); }
+.tok-str  { color: var(--ok); }
+.tok-num  { color: #5E86C6; }
+.tok-bool { color: var(--warn); }
+.tok-null { color: var(--ink-faint); }
+.tok-punc { color: var(--ink-soft); }
+.log-view {
+  background: var(--dark-block); color: #D7D2C4; font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+  border-radius: var(--r-input); padding: 16px; max-height: 56vh; overflow: auto; white-space: pre-wrap; word-break: break-word;
+}
+
+/* template select row */
+.field-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.field-row label { font-size: 13px; color: var(--ink-soft); }
+select.input, input.input {
+  font-family: var(--sans); font-size: 14px; background: var(--surface-sunk); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-input); padding: 8px 12px;
+}
+select.input:focus, input.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 10px; width: min(420px, calc(100vw - 32px)); }
+.toast {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg);
+  padding: 13px 14px 13px 16px; display: flex; align-items: flex-start; gap: 12px;
+  border-left: 4px solid var(--ink-faint); animation: slidein .26s var(--ease);
+}
+.toast.ok { border-left-color: var(--ok); }
+.toast.err { border-left-color: var(--accent); }
+.toast.leaving { animation: slideout .24s var(--ease) forwards; }
+@keyframes slidein { from{opacity:0; transform: translateY(-12px);} to{opacity:1; transform:none;} }
+@keyframes slideout { to{opacity:0; transform: translateY(-12px);} }
+.toast .msg { flex: 1; font-size: 13.5px; }
+.toast .msg .t { font-weight: 600; }
+.toast .msg .d { color: var(--ink-soft); font-size: 12.5px; margin-top: 1px; }
+.toast .close { background: none; border: none; color: var(--ink-faint); cursor: pointer; padding: 2px; }
+.toast .close:hover { color: var(--ink); }
+
+/* ============================================================
+   SKELETON
+   ============================================================ */
+.skel { background: var(--surface-sunk); border-radius: 6px; animation: breathe 1.6s var(--ease) infinite; }
+@keyframes breathe { 0%,100%{opacity:.55;} 50%{opacity:1;} }
+.skel-row td { padding: 16px; }
+.skel-line { height: 14px; }
+
+.empty { text-align: center; padding: 56px 20px; color: var(--ink-faint); }
+.empty .big { font-family: var(--serif); font-size: 18px; color: var(--ink-soft); margin-bottom: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TOPBAR ================= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo">XM<span class="glyph">Rig</span></span>
+      <span class="sub">Control Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <div class="conn" id="conn"><span class="dot"></span><span id="connLabel">Connecting…</span></div>
+      <span class="refreshed" id="refreshed">—</span>
+      <button class="icon-btn" id="refreshBtn" aria-label="Refresh now" title="Refresh now">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v5h-5"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= KPI ================= -->
+  <section class="kpi-grid" id="kpiGrid">
+    <!-- filled by JS -->
+  </section>
+
+  <!-- ================= CHART ================= -->
+  <div class="section-head"><h2>Network hashrate</h2><span class="meta" id="chartMeta">last 30 samples</span></div>
+  <section class="card" id="chartCard">
+    <div class="card-head">
+      <h2 style="font-size:16px;">Aggregate H/s</h2>
+      <span class="meta" id="chartPeak"></span>
+      <div class="spacer"></div>
+      <button class="collapse-btn" id="chartCollapse" aria-label="Collapse chart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="chart-legend">
+        <span class="key"><span class="swatch" style="background:var(--accent)"></span>Total hashrate</span>
+        <span class="key"><span class="swatch" style="background:var(--ink-soft)"></span>Average / miner</span>
+      </div>
+      <div class="chart-body"><div class="chart-wrap"><canvas id="chart"></canvas><div class="chart-cursor" id="chartCursor"></div><div class="chart-tip" id="chartTip"></div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= TABLE ================= -->
+  <div class="section-head"><h2>Miners</h2><span class="meta" id="tableMeta"></span></div>
+  <section class="card">
+    <div class="card-head">
+      <h2 style="font-size:16px;">Fleet status</h2>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" id="resetBtn" title="Clear the entire status list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Reset list
+      </button>
+    </div>
+    <div class="table-scroll">
+      <table class="miners">
+        <thead>
+          <tr>
+            <th class="sortable" data-key="status">Status<span class="arrow"></span></th>
+            <th class="sortable" data-key="miner">Miner<span class="arrow"></span></th>
+            <th class="sortable" data-key="hashrate">Hashrate<span class="arrow"></span></th>
+            <th class="sortable" data-key="pool">Pool<span class="arrow"></span></th>
+            <th class="sortable" data-key="uptime">Uptime<span class="arrow"></span></th>
+            <th class="sortable" data-key="version">Version<span class="arrow"></span></th>
+            <th class="num">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="minerRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= CONFIG MODAL ================= -->
+<div class="overlay" id="cfgOverlay">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="cfgTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="cfgTitle">Configuration</h2>
+        <div class="sub" id="cfgSubtitle"></div>
+      </div>
+      <button class="icon-btn x" id="cfgClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="code-wrap">
+        <pre class="code-hl mono"><code id="cfgHL"></code></pre>
+        <textarea class="code-area mono" id="cfgEditor" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="cfgCancel">Cancel</button>
+      <button class="btn btn-primary" id="cfgSave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save config
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LOG MODAL ================= -->
+<div class="overlay" id="logOverlay">
+  <div class="modal wide-log" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="logTitle">Miner log</h2>
+        <div class="sub" id="logSubtitle"></div>
+      </div>
+      <button class="icon-btn x" id="logClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="log-view mono" id="logView">—</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="logCopy">Copy</button>
+      <button class="btn btn-primary" id="logRefresh">Refresh</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/* ============================================================
+   XMRig Control Dashboard
+   API contract preserved: all /admin/* endpoints, same verbs.
+   Falls back to demo data when no CC server is reachable.
+   ============================================================ */
+(function(){
+  "use strict";
+
+  var API = "";                 // same-origin /admin/*
+  var REFRESH_MS = 8000;
+  var ACTIVE_WINDOW_MS = 120000; // miner considered offline if no update within 2 min
+
+  var state = {
+    miners: [],
+    series: [],        // {t, total, avg}
+    demo: false,
+    lastRefresh: null,
+    templates: [],
+    cfgTarget: null,   // current clientId / template_x in editor
+    sort: { key:"status", dir:1 },  // table sort column + direction (1 asc / -1 desc)
+    chartPts: []       // [{x,y,d}] chart point coords for hover tooltip
+  };
+
+  /* -------- helpers -------- */
+  function $(s, r){ return (r||document).querySelector(s); }
+  function el(tag, cls, html){ var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+  function fmtHashrate(h){
+    h = +h || 0;
+    if (h >= 1e9) return (h/1e9).toFixed(2)+" GH/s";
+    if (h >= 1e6) return (h/1e6).toFixed(2)+" MH/s";
+    if (h >= 1e3) return (h/1e3).toFixed(2)+" kH/s";
+    return h.toFixed(1)+" H/s";
+  }
+  function splitHr(h){
+    h=+h||0; var v,u;
+    if(h>=1e6){v=(h/1e6).toFixed(2);u="MH/s";}
+    else if(h>=1e3){v=(h/1e3).toFixed(2);u="kH/s";}
+    else {v=h.toFixed(1);u="H/s";}
+    return {v:v,u:u};
+  }
+  function fmtUptime(ms){
+    var s=Math.floor((+ms||0)/1000); if(!s) return "—";
+    var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+    if(d) return d+"d "+h+"h";
+    if(h) return h+"h "+m+"m";
+    return m+"m";
+  }
+  function timeStr(d){ d=d||new Date(); return d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
+
+  function ajax(path, opts){
+    opts = opts || {};
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: opts.body ? {"Content-Type":"application/json"} : undefined,
+      body: opts.body ? (typeof opts.body==="string"?opts.body:JSON.stringify(opts.body)) : undefined,
+      credentials: "same-origin"
+    }).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      var ct=r.headers.get("content-type")||"";
+      return ct.indexOf("json")>=0 ? r.json() : r.text();
+    });
+  }
+
+  /* ============================================================
+     TOASTS
+     ============================================================ */
+  function toast(title, detail, kind){
+    var t = el("div", "toast "+(kind||""));
+    var ico = kind==="ok" ? "✓" : kind==="err" ? "!" : "i";
+    t.innerHTML = '<div class="msg"><div class="t">'+escapeHtml(title)+'</div>'+(detail?'<div class="d">'+escapeHtml(detail)+'</div>':'')+'</div>';
+    var x = el("button","close",'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>');
+    t.appendChild(x);
+    var close=function(){ t.classList.add("leaving"); setTimeout(function(){ t.remove(); }, 240); };
+    x.onclick=close;
+    $("#toasts").appendChild(t);
+    setTimeout(close, 3800);
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* ============================================================
+     STATUS NORMALISATION
+     ============================================================ */
+  function normalize(list){
+    // Accept either array of {client_status:{...}} or array of flat objects.
+    var now = Date.now();
+    return (list||[]).map(function(row){
+      var c = row.client_status || row || {};
+      var id = c.id || c.client_id || row.clientId || row.id || "unknown";
+      var hr = c.hashrate_short || c.hashrate || (c.hashrate_medium) || 0;
+      var lastUpd = c.last_status_update ? (c.last_status_update*1000 > 1e15 ? c.last_status_update : c.last_status_update*1000) : (row._t || now);
+      // raw mining state
+      var raw = (c.client_status || c.status || "").toString().toUpperCase();
+      var online = (now - lastUpd) < ACTIVE_WINDOW_MS;
+      var stat;
+      if(!online) stat = "down";
+      else if(raw.indexOf("PAUSE")>=0 || raw==="STOP" || raw==="STOPPED") stat = "warn";
+      else stat = "ok";
+      return {
+        id: id,
+        raw: raw || (online?"RUNNING":"OFFLINE"),
+        status: stat,
+        hashrate: +hr || 0,
+        pool: c.current_pool || c.pool || "—",
+        version: c.version || c.client_version || "—",
+        uptime: c.uptime || 0,
+        cpu: c.cpu_brand || c.cpu || "",
+        shares: { good: c.shares_good!=null?c.shares_good:null, total: c.shares_total!=null?c.shares_total:null },
+        lastUpd: lastUpd
+      };
+    });
+  }
+
+  /* ============================================================
+     RENDER — KPIs
+     ============================================================ */
+  var KPI_ICONS = {
+    online: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+    total:  '<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+    avg:    '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    offline:'<path d="M12 3v9"/><path d="M5.6 7A9 9 0 1 0 18.4 7"/>'
+  };
+  function renderKPIs(){
+    var miners = state.miners;
+    var online = miners.filter(function(m){return m.status!=="down";});
+    var offline = miners.length - online.length;
+    var total = online.reduce(function(a,m){return a+m.hashrate;},0);
+    var avg = online.length ? total/online.length : 0;
+
+    var cards = [
+      { key:"online",  label:"Online miners", value:String(online.length), unit:"of "+miners.length, ico:KPI_ICONS.online },
+      { key:"total",   label:"Total hashrate", value:splitHr(total).v, unit:splitHr(total).u, ico:KPI_ICONS.total },
+      { key:"avg",     label:"Average / miner", value:splitHr(avg).v, unit:splitHr(avg).u, ico:KPI_ICONS.avg },
+      { key:"offline", label:"Offline", value:String(offline), unit:offline===1?"miner":"miners", ico:KPI_ICONS.offline }
+    ];
+    var g = $("#kpiGrid"); g.innerHTML="";
+    cards.forEach(function(c){
+      var node = el("div","kpi"+(c.key==="total"?" accentbar":""));
+      node.innerHTML =
+        '<div class="top"><span class="label">'+c.label+'</span>'+
+        '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+c.ico+'</svg></span></div>'+
+        '<div class="value">'+c.value+'<span class="unit">'+c.unit+'</span></div>';
+      g.appendChild(node);
+    });
+  }
+  function skeletonKPIs(){
+    var g=$("#kpiGrid"); g.innerHTML="";
+    for(var i=0;i<4;i++){
+      var n=el("div","kpi");
+      n.innerHTML='<div class="skel skel-line" style="width:55%"></div><div class="skel" style="height:34px;width:70%;margin-top:18px;border-radius:8px"></div><div class="skel skel-line" style="width:40%;margin-top:12px"></div>';
+      g.appendChild(n);
+    }
+  }
+
+  /* ============================================================
+     RENDER — TABLE
+     ============================================================ */
+  var SORT_KEYS = {
+    status:  function(m){ return {ok:0,warn:1,down:2}[m.status]; },
+    miner:   function(m){ return (m.id||"").toLowerCase(); },
+    hashrate:function(m){ return m.hashrate; },
+    pool:    function(m){ return (m.pool||"").toLowerCase(); },
+    uptime:  function(m){ return m.uptime; },
+    version: function(m){ return (m.version||"").toLowerCase(); }
+  };
+  function sortMiners(){
+    var acc = SORT_KEYS[state.sort.key], dir = state.sort.dir;
+    if(!acc) return;
+    state.miners.sort(function(a,b){
+      var va=acc(a), vb=acc(b);
+      if(typeof va==="number" && typeof vb==="number") return (va-vb)*dir;
+      return String(va).localeCompare(String(vb))*dir;
+    });
+  }
+  function updateSortIndicators(){
+    document.querySelectorAll("table.miners thead th.sortable").forEach(function(th){
+      var on = th.getAttribute("data-key")===state.sort.key;
+      th.classList.toggle("sorted", on);
+      var ar=th.querySelector(".arrow");
+      if(ar) ar.textContent = on ? (state.sort.dir>0?"▲":"▼") : "";
+    });
+  }
+  function bindSortHeaders(){
+    document.querySelectorAll("table.miners thead th.sortable").forEach(function(th){
+      th.addEventListener("click", function(){
+        var k=th.getAttribute("data-key");
+        if(state.sort.key===k) state.sort.dir*=-1;
+        else { state.sort.key=k; state.sort.dir=1; }
+        renderTable();
+      });
+    });
+  }
+  var ICO = {
+    restart:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v5h-5"/>',
+    start:'<path d="M7 5l12 7-12 7z"/>',
+    stop:'<path d="M9 5v14M15 5v14"/>',
+    config:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    log:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
+    remove:'<path d="M18 6 6 18M6 6l12 12"/>'
+  };
+  function actBtn(name, label, danger){
+    return '<button class="act'+(danger?" danger":"")+'" data-act="'+name+'" aria-label="'+label+'" title="'+label+'">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+ICO[name]+'</svg></button>';
+  }
+  function renderTable(){
+    sortMiners();
+    var tb = $("#minerRows"); tb.innerHTML="";
+    updateSortIndicators();
+    if(!state.miners.length){
+      var tr=el("tr"); tr.innerHTML='<td colspan="7"><div class="empty"><div class="big">No miners reporting</div>Connected miners will appear here as they check in.</div></td>';
+      tb.appendChild(tr); 
+      $("#tableMeta").textContent="";
+      return;
+    }
+    $("#tableMeta").textContent = state.miners.length + (state.miners.length===1?" miner":" miners");
+    state.miners.forEach(function(m){
+      var hr=splitHr(m.hashrate);
+      var badgeLabel = m.status==="ok"?"Online":m.status==="warn"?"Paused":"Offline";
+      var tr=el("tr");
+      tr.innerHTML =
+        '<td><span class="badge '+m.status+'"><span class="dot"></span>'+badgeLabel+'</span></td>'+
+        '<td><div class="miner-name">'+escapeHtml(m.id)+'</div>'+(m.cpu?'<div class="miner-sub">'+escapeHtml(m.cpu)+'</div>':'')+'</td>'+
+        '<td class="lnum"><span class="hr-val">'+(m.status==="down"?"—":hr.v)+'</span>'+(m.status==="down"?'':'<span class="hr-unit">'+hr.u+'</span>')+'</td>'+
+        '<td><span class="mono" style="font-size:13px;color:var(--ink-soft)">'+escapeHtml(m.pool)+'</span></td>'+
+        '<td class="lnum">'+fmtUptime(m.uptime)+'</td>'+
+        '<td><span class="mono" style="font-size:13px;color:var(--ink-soft)">'+escapeHtml(m.version)+'</span></td>'+
+        '<td><div class="row-actions">'+
+          actBtn("config","Edit config")+
+          actBtn("log","View log")+
+          actBtn("remove","Remove from list", true)+
+        '</div></td>';
+      tr.querySelectorAll(".act").forEach(function(b){
+        b.addEventListener("click", function(){ onRowAction(b.getAttribute("data-act"), m); });
+      });
+      tb.appendChild(tr);
+    });
+  }
+  function skeletonTable(){
+    var tb=$("#minerRows"); tb.innerHTML="";
+    for(var i=0;i<5;i++){
+      var tr=el("tr","skel-row");
+      tr.innerHTML='<td><div class="skel" style="width:74px;height:24px;border-radius:999px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:120px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:80px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:140px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:50px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:60px"></div></td>'+
+        '<td><div class="skel skel-line" style="width:120px;margin-left:auto"></div></td>';
+      tb.appendChild(tr);
+    }
+  }
+
+  /* ============================================================
+     ROW ACTIONS
+     ============================================================ */
+  function sendCommand(id, command, payload){
+    return ajax("/admin/setClientCommand?clientId="+encodeURIComponent(id), {
+      method:"POST",
+      body:{ control_command: { command: command, payload: payload!=null?payload:"" } }
+    });
+  }
+  function onRowAction(act, m){
+    if(act==="config"){
+      openConfig(m.id);
+    } else if(act==="log"){
+      openLog(m.id);
+    } else if(act==="remove"){
+      if(!confirm("Remove \""+m.id+"\" from the status list?")) return;
+      if(state.demo){ state.miners=state.miners.filter(function(x){return x!==m;}); renderKPIs(); renderTable(); toast("Removed", m.id+" (demo)", "ok"); return; }
+      ajax("/admin/removeClientStatus?clientId="+encodeURIComponent(m.id), {method:"POST"})
+        .then(function(){ toast("Removed", m.id, "ok"); refresh(); })
+        .catch(function(e){ toast("Remove failed", String(e.message||e), "err"); });
+    }
+  }
+
+  $("#resetBtn").addEventListener("click", function(){
+    if(!confirm("Clear the ENTIRE status list? This removes all miner records.")) return;
+    if(state.demo){ state.miners=[]; renderKPIs(); renderTable(); toast("Status list cleared", "demo", "ok"); return; }
+    ajax("/admin/resetClientStatusList", {method:"POST", body:{}})
+      .then(function(){ toast("Status list cleared", "", "ok"); refresh(); })
+      .catch(function(e){ toast("Reset failed", String(e.message||e), "err"); });
+  });
+
+  /* ============================================================
+     CONFIG MODAL
+     ============================================================ */
+  function highlightJSON(src){
+    var re = /"(?:\\.|[^"\\])*"|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}\[\],:]|[^\s]/g;
+    return src.replace(re, function(m, off, str){
+      var cls="";
+      if(m.charAt(0)==='"') cls = /^\s*:/.test(str.slice(off+m.length)) ? "tok-key" : "tok-str";
+      else if(m==="true"||m==="false") cls="tok-bool";
+      else if(m==="null") cls="tok-null";
+      else if(m.length===1 && "{}[],:".indexOf(m)>=0) cls="tok-punc";
+      else if(/^-?\d/.test(m)) cls="tok-num";
+      var e=escapeHtml(m);
+      return cls ? '<span class="'+cls+'">'+e+'</span>' : e;
+    });
+  }
+  function syncHL(){
+    var ta=$("#cfgEditor"), pre=$("#cfgHL").parentNode;
+    $("#cfgHL").innerHTML = highlightJSON(ta.value) + "\n";
+    pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft;
+  }
+  function setCfg(text){ $("#cfgEditor").value = text==null?"":text; syncHL(); }
+  $("#cfgEditor").addEventListener("input", syncHL);
+  $("#cfgEditor").addEventListener("scroll", function(){
+    var pre=$("#cfgHL").parentNode; pre.scrollTop=this.scrollTop; pre.scrollLeft=this.scrollLeft;
+  });
+  function openConfig(target){
+    state.cfgTarget = target;
+    $("#cfgTitle").textContent = "Miner configuration";
+    $("#cfgSubtitle").textContent = target;
+    setCfg("Loading…");
+    openOverlay("#cfgOverlay");
+    if(state.demo){
+      setCfg(JSON.stringify(DEMO_CONFIG, null, 2));
+      return;
+    }
+    ajax("/admin/getClientConfig?clientId="+encodeURIComponent(target))
+      .then(function(cfg){ setCfg(typeof cfg==="string"?cfg:JSON.stringify(cfg, null, 2)); })
+      .catch(function(e){ setCfg(""); toast("Could not load config", String(e.message||e), "err"); });
+  }
+  $("#cfgSave").addEventListener("click", function(){
+    var raw=$("#cfgEditor").value;
+    try { JSON.parse(raw); } catch(e){ toast("Invalid JSON", "Fix the highlighted error before saving", "err"); return; }
+    var t=state.cfgTarget;
+    if(state.demo){ toast("Config pushed", String(t)+" (demo)", "ok"); closeOverlay("#cfgOverlay"); return; }
+    ajax("/admin/setClientConfig?clientId="+encodeURIComponent(t), {method:"POST", body:raw})
+      .then(function(){ return sendCommand(t, "UPDATE_CONFIG"); })
+      .then(function(){ toast("Config pushed to miner", String(t)+" — applying", "ok"); closeOverlay("#cfgOverlay"); })
+      .catch(function(e){ toast("Push failed", String(e.message||e), "err"); });
+  });
+  $("#cfgCancel").addEventListener("click", function(){ closeOverlay("#cfgOverlay"); });
+  $("#cfgClose").addEventListener("click", function(){ closeOverlay("#cfgOverlay"); });
+
+  /* ============================================================
+     LOG MODAL
+     ============================================================ */
+  function openLog(id){
+    state.logTarget = id;
+    $("#logSubtitle").textContent = id;
+    $("#logView").textContent = "Loading…";
+    openOverlay("#logOverlay");
+    fetchLog(id);
+  }
+  function fetchLog(id){
+    if(state.demo){ $("#logView").textContent = DEMO_LOG; return; }
+    ajax("/admin/getClientLog?clientId="+encodeURIComponent(id))
+      .then(function(res){ $("#logView").textContent = (res && res.client_log!=null) ? res.client_log : (typeof res==="string"?res:JSON.stringify(res,null,2)); })
+      .catch(function(e){ $("#logView").textContent=""; toast("Could not load log", String(e.message||e), "err"); });
+  }
+  $("#logRefresh").addEventListener("click", function(){ fetchLog(state.logTarget); });
+  $("#logCopy").addEventListener("click", function(){
+    var txt=$("#logView").textContent;
+    if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast("Log copied","","ok"); }); }
+  });
+  $("#logClose").addEventListener("click", function(){ closeOverlay("#logOverlay"); });
+
+  /* -------- overlay utils -------- */
+  function openOverlay(sel){ $(sel).classList.add("open"); }
+  function closeOverlay(sel){ $(sel).classList.remove("open"); }
+  document.querySelectorAll(".overlay").forEach(function(o){
+    o.addEventListener("click", function(e){ if(e.target===o) o.classList.remove("open"); });
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape") document.querySelectorAll(".overlay.open").forEach(function(o){ o.classList.remove("open"); });
+  });
+
+  /* ============================================================
+     CHART (canvas line + accent fill)
+     ============================================================ */
+  var chartCanvas = $("#chart"), cctx = chartCanvas.getContext("2d");
+  function drawChart(){
+    var data = state.series;
+    $("#chartMeta").textContent = data.length ? (state.demo?"demo · ":"")+data.length+" samples" : "no samples yet";
+    var dpr = window.devicePixelRatio || 1;
+    var rect = chartCanvas.getBoundingClientRect();
+    var W = rect.width, H = rect.height;
+    if(W===0||H===0) return;
+    chartCanvas.width = W*dpr; chartCanvas.height = H*dpr;
+    cctx.setTransform(dpr,0,0,dpr,0,0);
+    cctx.clearRect(0,0,W,H);
+    var cs = getComputedStyle(document.documentElement);
+    var cAccent = cs.getPropertyValue("--accent").trim();
+    var cInk = cs.getPropertyValue("--ink-soft").trim();
+    var cLine = cs.getPropertyValue("--line").trim();
+    var cFaint = cs.getPropertyValue("--ink-faint").trim();
+
+    var padL=8, padR=8, padT=14, padB=22;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+    if(!data.length){ state.chartPts=[]; return; }
+
+    var totals=data.map(function(d){return d.total;});
+    var avgs=data.map(function(d){return d.avg;});
+    var maxV=Math.max.apply(null, totals.concat([1]));
+    maxV = maxV*1.18;
+
+    // gridlines
+    cctx.strokeStyle=cLine; cctx.lineWidth=1; cctx.font="11px "+cs.getPropertyValue("--mono"); cctx.fillStyle=cFaint;
+    for(var g=0; g<=3; g++){
+      var y=padT + plotH*(g/3);
+      cctx.globalAlpha=.6; cctx.beginPath(); cctx.moveTo(padL,y); cctx.lineTo(W-padR,y); cctx.stroke(); cctx.globalAlpha=1;
+      var val=maxV*(1-g/3);
+      cctx.fillText(fmtHashrate(val).replace(" ",""), padL+2, y-4);
+    }
+
+    var X=function(i){ return padL + (data.length<=1?plotW/2:plotW*(i/(data.length-1))); };
+    var Y=function(v){ return padT + plotH*(1 - v/maxV); };
+
+    // avg line (secondary)
+    cctx.strokeStyle=cInk; cctx.lineWidth=1.5; cctx.globalAlpha=.55;
+    cctx.beginPath();
+    avgs.forEach(function(v,i){ var x=X(i),y=Y(v); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.stroke(); cctx.globalAlpha=1;
+
+    // total area fill
+    var grad=cctx.createLinearGradient(0,padT,0,padT+plotH);
+    grad.addColorStop(0, hexA(cAccent,.28));
+    grad.addColorStop(1, hexA(cAccent,0));
+    cctx.beginPath();
+    totals.forEach(function(v,i){ var x=X(i),y=Y(v); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.lineTo(X(data.length-1), padT+plotH); cctx.lineTo(X(0), padT+plotH); cctx.closePath();
+    cctx.fillStyle=grad; cctx.fill();
+
+    // total line
+    cctx.beginPath();
+    totals.forEach(function(v,i){ var x=X(i),y=Y(v); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.strokeStyle=cAccent; cctx.lineWidth=2.4; cctx.lineJoin="round"; cctx.lineCap="round"; cctx.stroke();
+
+    // last point dot
+    var lx=X(data.length-1), ly=Y(totals[totals.length-1]);
+    cctx.beginPath(); cctx.arc(lx,ly,4,0,Math.PI*2); cctx.fillStyle=cAccent; cctx.fill();
+    cctx.beginPath(); cctx.arc(lx,ly,4,0,Math.PI*2); cctx.strokeStyle=cs.getPropertyValue("--surface").trim(); cctx.lineWidth=2; cctx.stroke();
+
+    state.chartPts = data.map(function(d,i){ return { x:X(i), y:Y(d.total), d:d }; });
+    $("#chartPeak").textContent = "peak " + fmtHashrate(Math.max.apply(null,totals));
+  }
+  function hexA(hex, a){
+    hex=hex.trim();
+    if(hex[0]!=="#") return hex; // already rgb/oklch — fallback
+    var n=hex.slice(1);
+    if(n.length===3) n=n.split("").map(function(c){return c+c;}).join("");
+    var r=parseInt(n.slice(0,2),16), g=parseInt(n.slice(2,4),16), b=parseInt(n.slice(4,6),16);
+    return "rgba("+r+","+g+","+b+","+a+")";
+  }
+
+  /* collapse chart */
+  $("#chartCollapse").addEventListener("click", function(){
+    $("#chartCard").classList.toggle("collapsed");
+    if(!$("#chartCard").classList.contains("collapsed")) setTimeout(drawChart, 30);
+  });
+
+  /* hover tooltip: nearest point by x */
+  function chartHover(ev){
+    var pts=state.chartPts;
+    if(!pts||!pts.length){ chartHideTip(); return; }
+    var rect=chartCanvas.getBoundingClientRect();
+    var mx=ev.clientX-rect.left;
+    var best=pts[0], bd=Math.abs(pts[0].x-mx);
+    for(var i=1;i<pts.length;i++){ var dd=Math.abs(pts[i].x-mx); if(dd<bd){ bd=dd; best=pts[i]; } }
+    var tip=$("#chartTip"), cur=$("#chartCursor"), when=new Date(best.d.t);
+    tip.innerHTML='<div class="tt-time">'+when.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+'</div>'+
+      '<div class="tt-row"><span class="tt-k">Total</span><span class="tt-v">'+fmtHashrate(best.d.total)+'</span></div>'+
+      '<div class="tt-row"><span class="tt-k">Avg</span><span class="tt-v">'+fmtHashrate(best.d.avg)+'</span></div>';
+    tip.style.display="block"; cur.style.display="block"; cur.style.left=best.x+"px";
+    var ww=chartCanvas.parentNode.clientWidth, tw=tip.offsetWidth;
+    var left=best.x+12; if(left+tw>ww) left=best.x-tw-12; if(left<0) left=4;
+    tip.style.left=left+"px"; tip.style.top=Math.max(4,best.y-10)+"px";
+  }
+  function chartHideTip(){ $("#chartTip").style.display="none"; $("#chartCursor").style.display="none"; }
+  chartCanvas.addEventListener("mousemove", chartHover);
+  chartCanvas.addEventListener("mouseleave", chartHideTip);
+
+  /* ============================================================
+     DATA FETCH
+     ============================================================ */
+  function pushSeries(){
+    var online=state.miners.filter(function(m){return m.status!=="down";});
+    var total=online.reduce(function(a,m){return a+m.hashrate;},0);
+    var avg=online.length?total/online.length:0;
+    state.series.push({ t:Date.now(), total:total, avg:avg });
+    if(state.series.length>30) state.series.shift();
+  }
+
+  // Merge server-persisted per-algo time-series into one {t,total,avg} list.
+  function aggregateStatistics(clientStatistics){
+    var map = {};
+    (clientStatistics||[]).forEach(function(a){
+      (a.statistics||[]).forEach(function(s){
+        var t=s.timestamp;
+        if(!map[t]) map[t]={ total:0, miners:0 };
+        map[t].total  += (+s.hashrate||0);
+        map[t].miners += (+s.miner||0);
+      });
+    });
+    return Object.keys(map).map(Number).sort(function(x,y){return x-y;}).map(function(t){
+      return { t:t, total:map[t].total, avg: map[t].miners?map[t].total/map[t].miners:0 };
+    });
+  }
+  var DAY_MS = 24*60*60*1000;
+  // Realtime aggregate from the current status list (tip of the curve).
+  function liveSample(){
+    var online=state.miners.filter(function(m){return m.status!=="down";});
+    var total=online.reduce(function(a,m){return a+m.hashrate;},0);
+    var avg=online.length?total/online.length:0;
+    return { t:Date.now(), total:total, avg:avg };
+  }
+  // Server keeps persistent history (survives reloads); show last 24h + realtime tip.
+  function fetchStatistics(){
+    return ajax("/admin/getClientStatistics").then(function(res){
+      var series = aggregateStatistics(res && res.client_statistics);
+      var cut = Date.now() - DAY_MS;
+      series = series.filter(function(p){ return p.t >= cut; });
+      series.push(liveSample());
+      state.series = series;
+    }).catch(function(){ pushSeries(); });
+  }
+
+  function backfillDemoSeries(){
+    // seed ~24 points of plausible history so the chart reads as a trend on first paint
+    var online=state.miners.filter(function(m){return m.status!=="down";});
+    var total=online.reduce(function(a,m){return a+m.hashrate;},0);
+    var avg=online.length?total/online.length:0;
+    var n=24, now=Date.now();
+    for(var i=n;i>0;i--){
+      var w = 1 + Math.sin(i*0.55)*0.06 + Math.sin(i*0.21)*0.04 - (i/n)*0.02;
+      state.series.push({ t: now-i*REFRESH_MS, total: total*w, avg: avg*w });
+    }
+  }
+
+  function setConn(mode){
+    var c=$("#conn");
+    c.classList.remove("live","demo");
+    if(mode==="live"){ c.classList.add("live"); $("#connLabel").textContent="Live"; }
+    else if(mode==="demo"){ c.classList.add("demo"); $("#connLabel").textContent="Demo data"; }
+    else { $("#connLabel").textContent="Disconnected"; }
+  }
+
+  function refresh(){
+    return ajax("/admin/getClientStatusList").then(function(list){
+      state.demo=false; setConn("live");
+      state.miners = normalize(Array.isArray(list)?list:(list.client_status_list||list.clients||[]));
+      afterData();
+      return fetchStatistics().then(drawChart);   // server-persisted history
+    }).catch(function(){
+      // fall back to demo so the dashboard is presentable without a server
+      var first = !state.demo && state.series.length===0;
+      state.demo=true; setConn("demo");
+      state.miners = normalize(genDemo());
+      if(first) backfillDemoSeries();
+      pushSeries();
+      afterData();
+      drawChart();
+    });
+  }
+  function afterData(){
+    renderKPIs();
+    renderTable();
+    state.lastRefresh=new Date();
+    $("#refreshed").textContent="Updated "+timeStr(state.lastRefresh);
+  }
+
+  $("#refreshBtn").addEventListener("click", function(){
+    var ic=$("#refreshBtn"); ic.style.transition="transform .6s var(--ease)"; ic.querySelector("svg").style.transform="rotate(360deg)";
+    setTimeout(function(){ ic.querySelector("svg").style.transition="none"; ic.querySelector("svg").style.transform=""; setTimeout(function(){ic.querySelector("svg").style.transition="";},20); }, 600);
+    refresh();
+  });
+
+  /* ============================================================
+     THEME
+     ============================================================ */
+  var SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var MOON='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  function applyTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    var dark = t==="dark" || (t==="" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    $("#themeIcon").innerHTML = dark ? SUN : MOON;
+    setTimeout(drawChart, 20);
+  }
+  $("#themeBtn").addEventListener("click", function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var sysDark=window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var nowDark = cur==="dark" || (cur===""&&sysDark);
+    var next = nowDark ? "light" : "dark";
+    localStorage.setItem("xmrig-theme", next);
+    applyTheme(next);
+  });
+  (function initTheme(){
+    var saved=localStorage.getItem("xmrig-theme")||"";
+    applyTheme(saved);
+  })();
+
+  window.addEventListener("resize", function(){ clearTimeout(window.__rz); window.__rz=setTimeout(drawChart, 120); });
+
+  /* ============================================================
+     DEMO DATA
+     ============================================================ */
+  var DEMO_NAMES = [
+    ["rig-alpha-01","AMD Ryzen 9 7950X 16-Core"],
+    ["rig-alpha-02","AMD Ryzen 9 5950X 16-Core"],
+    ["edge-node-7","Intel Xeon E5-2697 v4"],
+    ["edge-node-8","Intel Xeon E5-2697 v4"],
+    ["lab-threadripper","AMD Threadripper 3970X 32-Core"],
+    ["office-i9","Intel Core i9-13900K"],
+    ["vm-cluster-03","AMD EPYC 7543P 32-Core"],
+    ["home-mini","Intel Core i5-12400"],
+    ["cold-spare-02","Intel Xeon Silver 4214"]
+  ];
+  var demoSeed = 0;
+  function genDemo(){
+    demoSeed += 1;
+    var now=Date.now();
+    return DEMO_NAMES.map(function(p, i){
+      var offline = (i===8);                 // cold-spare offline
+      var paused = (i===3);                  // edge-node-8 paused
+      var base = [11200, 9800, 6400, 6300, 21500, 8700, 18900, 4200, 0][i];
+      var jitter = Math.sin((demoSeed+i)*0.7)*base*0.04;
+      var hr = offline?0:(paused?0:(base+jitter));
+      return {
+        client_status: {
+          id: p[0],
+          client_status: offline ? "OFFLINE" : (paused?"PAUSED":"RUNNING"),
+          current_pool: i%2 ? "pool.supportxmr.com:443" : "xmr.kryptex.network:7777",
+          cpu_brand: p[1],
+          hashrate_short: hr,
+          version: "6.21."+(i%3+0),
+          uptime: offline?0:((86400*(i+1) + 3600*(demoSeed%24))*1000),
+          shares_good: offline?0:(1240*(i+1)),
+          shares_total: offline?0:(1240*(i+1)+i),
+          last_status_update: offline ? (now-9*60000)/1000 : now/1000
+        }
+      };
+    });
+  }
+  var DEMO_CONFIG = {
+    "api": { "id": null, "worker-id": null },
+    "autosave": true,
+    "cpu": { "enabled": true, "huge-pages": true, "max-threads-hint": 100, "priority": null },
+    "pools": [
+      { "url": "pool.supportxmr.com:443", "user": "4xAbC…walletAddress…9kQ", "keepalive": true, "tls": true }
+    ],
+    "print-time": 60,
+    "retries": 5
+  };
+  var DEMO_LOG = [
+    "[2026-06-08 14:02:11.331]  net      use pool pool.supportxmr.com:443  TLS",
+    "[2026-06-08 14:02:11.502]  net      new job from pool.supportxmr.com:443 diff 120001 algo rx/0 height 3211984",
+    "[2026-06-08 14:02:41.118]  cpu      accepted (482/482) diff 120001 (41 ms)",
+    "[2026-06-08 14:03:11.094]  miner    speed 10s/60s/15m 11248.2 11201.7 11190.4 H/s max 11402.9 H/s",
+    "[2026-06-08 14:03:41.220]  cpu      accepted (483/483) diff 120001 (38 ms)",
+    "[2026-06-08 14:04:11.087]  miner    speed 10s/60s/15m 11260.0 11210.3 11195.8 H/s max 11402.9 H/s",
+    "[2026-06-08 14:04:53.640]  net      new job from pool.supportxmr.com:443 diff 121540 algo rx/0 height 3211985",
+    "[2026-06-08 14:05:11.090]  cpu      accepted (484/484) diff 121540 (44 ms)"
+  ].join("\n");
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  bindSortHeaders();
+  skeletonKPIs();
+  skeletonTable();
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+
+})();
+</script>
+</body>
+</html>

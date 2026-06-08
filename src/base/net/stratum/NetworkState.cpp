@@ -357,3 +357,21 @@ void xmrig::NetworkState::stop()
     m_failures++;
     m_latency.clear();
 }
+
+
+#ifdef XMRIG_FEATURE_CC_CLIENT
+void xmrig::NetworkState::getConnection(ClientStatus& clientStatus) const
+{
+    clientStatus.setCurrentPool(m_pool);
+    clientStatus.setCurrentAlgoName(m_algorithm.name());
+}
+
+
+void xmrig::NetworkState::getResults(ClientStatus& clientStatus) const
+{
+    clientStatus.setHashesTotal(m_hashes);
+    clientStatus.setAvgTime(static_cast<uint32_t>(avgTime() / 1000));
+    clientStatus.setSharesGood(m_accepted);
+    clientStatus.setSharesTotal(m_accepted + m_rejected);
+}
+#endif

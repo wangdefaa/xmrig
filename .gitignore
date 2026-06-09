@@ -6,3 +6,7 @@ scripts/deps
 /src/backend/opencl/cl/cn/cryptonight_gen.cl
 .vscode
 /.qtcreator
+
+.claude
+.codex
+.DS_Store
